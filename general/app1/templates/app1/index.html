@@ -1,0 +1,141 @@
+{% extends 'app1/shablon.html' %}
+{% load static %}
+
+<head><link rel="stylesheet" href="{% static '/app1/css/main.css' %}" type="text/css"></head>
+
+{% block content %}
+
+<div class = "features">
+    <form class="rect_input" method='post' action="{% url 'CreateMail' %}">
+        <h2 style="font-size: 20pt"><br>Введите email-адрес<br>для проверки<br><br></h2>
+        {% csrf_token %}
+        {{form.text_mail}}
+        <input type='submit' class='btn btn-warning' value='Проверить'>
+    </form>
+    {% if last_mail %}
+        <p class="text-center">Всего проверено: {{count_mails}}</p>
+    {% endif %}
+</div>
+
+{% if method %}
+<div class="upload_file">
+  <h2 class="text-center">Результаты проверки</h2><br>
+    {% for key, value in method.items %}
+          {% if key == "Статус" %}
+                {% if value == "Активный" %}
+                    <h3 class="email-active">{{ value }}</h3><br>
+                {% endif %}
+                {% if value == "Неактивный" %}
+                    <h3 class="email-unactive">{{ value }}</h3><br>
+                {% endif %}
+                {% if value == "Несуществующий или закрытый" %}
+                    <h3 class="email-lock">{{ value }}</h3><br>
+                {% endif %}
+                {% if value == "Несуществующий" %}
+                    <h3 class="email-unexist">{{ value }}</h3><br>
+                {% endif %}
+                {% if value == "Некорректный" %}
+                    <h3 class="email-incorrectly">{{ value }}</h3><br>
+                {% endif %}
+          {% endif %}
+    {% endfor %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th class="text-center">Этап проверки</th>
+        <th class="text-center">Результат</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for key, value in method.items %}
+      <tr>
+          {% if value is not None and key != "Статус" %}
+            <td class="text-center" style="width: 30%">{{ key }}</td>
+            <td class="with-breaks">{{ value }}</td>
+          {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<hr class="border_hr">
+<div class="card text-center">
+        <div class="rect_input" style="height: 250px">
+            <h2 style="font-size: 20pt"><br>Загрузите список email-адресов<br>файлом формата .csv или .xlsx<br><br></h2>
+            <form method='post' action="" enctype="multipart/form-data"> {% csrf_token %}
+                <div class="form-group">
+                    {% csrf_token %}
+                    {{ file }}
+                    <br><br><button type="submit" class="btn btn-success">Загрузить файл</button>
+                </div>
+            </form>
+        </div>
+    {% if last_file %}
+        <p class="text-center"><br>Всего проверено файл(ов): {{count_files}}</p>
+    {% endif %}
+</div>
+
+<div class="get_result">
+    <p class="text_download">Чтобы запустить проверку загруженного файла и скачать результаты - нажмите «Проверить файл»</p>
+  <div class="row">
+    <div class="col text-center">
+        <button type='submit' class='btn btn-warning' onclick="window.location.href='/download'">Проверить файл</button>
+    </div>
+  </div>
+</div>
+
+{% if pie_img %}
+<div class="container_img">
+  <div class="row">
+      <p class="textgraph text-center">Ниже представлена диаграмма разделённых по группам email-адресов и построенная по данным последнего загруженного файла в БД</p>
+    <div class="col text-center">
+      <img src="{{ pie_img }}">
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<div class="columns1">
+<h3>Как проверяется email адрес</h3>
+<h4>Проверка синтаксиса</h4>
+<div class="columns2">
+<p>При запросе подтверждения адреса электронной почты в первую очередь будет выполнена проверка синтаксиса электронной почты,
+    т.е. проверено его соответствие правилам регулярных выражений, таким как:</p>
+<p>Формат адресов электронной почты - local-part@domain, где local-part может иметь длину до 64 символов, а имя домена может содержать не более 253 символов.
+    Формальные определения приведены в RFC 5322 и RFC 5321 - с более читаемой формой, приведенной в информационном RFC 3696 .</p>
+    <p>Локальная часть состоит из прописных и строчных латинских букв (A – Z, a – z) (ASCII: 65–90, 97–122), Цифры от 0 до 9 (ASCII: 48–57),
+        специальные символы: # - _ ~! $ & '() * +,; =: и %20, точка), точка (ASCII: 46) не может быть первым или последним символом,
+        а также не идет последовательно (например, John..Doe@example.com).</p>
+<p>Доменная часть email должна соответствовать строгим правилам:
+    она должна соответствовать требованиям к имени хоста, состоящему из букв, цифр, дефисов и точек.
+    Кроме того, доменная часть может быть литералом IP-адреса, заключенным в квадратные скобки, хотя это крайне редко встречается.</p>
+</div>
+
+<h4>Проверка доступности почтового сервера</h4>
+<p>Проверяется доступность MX-записи почтового сервера с помощью <a href="/analiz/whois_dns.php">DNS-запроса</a>.</p>
+
+<h4 id="smtp_test">Проверка самого ящика на сервере (проверить по SMTP)</h4>
+<div class="columns2">
+<p>Для этого сервис устанавливает соединение с почтовым сервером получателя и отправляет ему команды по аналогии с отправкой письма.
+    Если на сервере нет такого получателя, то при отправке команды "письмо для такого-то мыла"(RCPT TO:) сервер отвечает что такого ящика нет(код 550).
+    Не все сервера отвечают согласно требованиям RFC, например сервера mail.ru на любое письмо отвечает кодом 250, что всё Ok.</p>
+<p>Если включена проверка по SMTP: списывается два запроса, адреса в результирующем файле будут упорядочены по smtp-серверам</p>
+<p>С примером установления соединения и отправки команд можете ознакомиться <a href="/php/example/is_e-mail.php">здесь</a>. Время проверки каждого е-mail может занимать до 60 секунд.</p>
+<p id="Greylisting">Некоторые почтовые сервера для защиты от спама используют технологию <a href="https://ru.wikipedia.org/wiki/Серый_список">серых списков (Greylisting)</a>.
+    При отправке письма сервер отвечает кодом 450 или 451, что он временно не готов принять письмо. В этом случае необходимо повторно проверить почтовый адрес более чем через 30 минут.
+    При разовой проверке и проверке по API повторный запрос не отправляется. При пакетной обработке файла система будет ждать 30+ минут и повторно опрашивать почтовый сервер.
+    Время обработки файла с почтовыми адресами в этом случе существенно возрастает. Дополнительная оплата при пакетной обработке за повторную проверку не взимается.</p>
+<p id="mail.ru">Почтовые сервера mail.ru, inbox.ru, bk.ru, list.ru на любой адрес отвечают, что такой получатель есть и принимают для него полностью письмо.
+    И только потом присылают FBL письмо, что такого адреса не существует. Вам нужно сделать почтовый ящик для таких писем прописать его в
+    <a href="/Gs/postmaster.mail.ru/settings/">mail.ru</a> и обрабатывать <a href="/php/example/unsubscribe_imap_mail_fbl.php">отписку</a> для таких адресов.</p>
+
+    Сервис проверки Email на валидность учитывает <a href="/other/yandex_mail.php#plus">особенности формирования адреса почтовых серверов @yandex и @gmail</a>.
+</div>
+</div>
+
+{% endblock %}
+
+

@@ -1,0 +1,233 @@
+body {
+
+    font-family: Verdana;
+    margin: 0 auto;
+
+    background: url("../css_img/header_figure.svg") no-repeat;
+    -moz-background-size: 100%; /* Firefox 3.6+ */
+    -webkit-background-size: 100%; /* Safari 3.1+ и Chrome 4.0+ */
+    -o-background-size: 100%;
+    background-size: 100%;
+
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.features {
+    margin-top: 30px;
+    border:0;
+}
+
+.title1 {
+    text-align: left;
+    padding: 10vh 0 0 0;
+    margin: 0 20vw 10px 15vw;
+    font-weight: bolder;
+    border:0;
+}
+
+.title1_mini {
+    text-align: left;
+    padding: 0 0 22vh 0;
+    margin: 0 20vw 10px 15vw;
+    border:0;
+}
+
+.features > * + p {
+    margin-top: 20px;
+    border:0;
+}
+
+.card {
+    margin-top: 50px;
+    border:0;
+}
+
+.card > * + p {
+    margin-top: 20px;
+    border:0;
+}
+
+.form-group > * + p {
+    margin-top: 20px;
+    border:0;
+}
+
+.get_result {
+    margin-top: 20px;
+    border:0;
+}
+
+.get_result > * + p {
+    margin-top: 20px;
+    border:0;
+}
+
+.container_img {
+    margin-buttom: 0px;
+    border:0;
+}
+
+
+.text_download {
+    margin-top: 20px;
+    text-align: center;
+    border:0;
+}
+
+hr.border_hr {
+    margin-top: 60px;
+    opacity: 1;
+}
+
+.columns2 {
+    text-align: justify;
+    columns: 2 300px;
+    column-gap: 2em;
+    margin-bottom: 20px;
+    margin-top: 40px;
+}
+
+.h3 {
+    text-align: center;
+}
+
+.columns1 {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.textgraph {
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+
+td.with-breaks {
+    white-space: pre-wrap;
+    text-align: center;
+}
+
+.email-active {
+    text-align: center;
+    color: white;
+    padding: 15px;
+    border: 1px solid #009D66;
+    background: #009D66;
+    border-radius: 8px;
+}
+
+.email-unactive {
+    text-align: center;
+    color: white;
+    padding: 15px;
+    border: 1px solid #D7CB12;
+    background: #D7CB12;
+    border-radius: 8px;
+}
+
+.email-lock {
+    position: relative;
+    text-align: center;
+    color: white;
+    padding: 15px;
+    border: 1px solid gray;
+    background: gray;
+    border-radius: 8px;
+}
+
+.email-unexist {
+    text-align: center;
+    color: white;
+    padding: 15px;
+    border: 1px solid #427CA6;
+    background: #427CA6;
+    border-radius: 8px;
+}
+
+.email-incorrectly {
+    text-align: center;
+    color: white;
+    padding: 15px;
+    border: 1px solid #A61000;
+    background: #A61000;
+    border-radius: 8px;
+}
+
+.btn-warning, .btn-warning:hover, .btn-warning:active, .btn-warning:visited {
+    background-color: #6610F2 !important;
+    color: white !important;
+    border: 1px solid #6610F2 !important;
+    border-radius: 5px !important;
+}
+
+.btn-success, .btn-success:hover, .btn-success:active, .btn-success:visited {
+    background-color: #28AFB0 !important;
+    color: white !important;
+    border: 1px solid #28AFB0 !important;
+    border-radius: 5px !important;
+}
+
+.color-accent {
+    color: #28AFB0;
+}
+
+.header_ill {
+    padding: 5vh 0 0 0;
+    float: right;
+}
+
+.rect_input {
+    position: relative;
+    text-align: center;
+    horiz-align: center;
+    width: 600px;
+    height: 200px;
+    left: calc(50% - 600px/2);
+    top: calc(50% - 200px/2 + 300px);
+    background: rgba(220, 220, 240, 0.5);
+    border: 2px solid #D9DEEB;
+    border-radius: 10px;
+}
+
+.table {
+    position: relative;
+	border: none;
+	margin-bottom: 20px;
+    left: 5vw;
+    width: 90vw;
+}
+.table thead th {
+	font-weight: bold;
+	text-align: left;
+	border: none;
+	padding: 10px 15px;
+	background: #6610F2;
+    color: white;
+	font-size: 14px;
+}
+.table thead tr th:first-child {
+	border-radius: 8px 0 0 8px;
+}
+.table thead tr th:last-child {
+	border-radius: 0 8px 8px 0;
+}
+.table tbody td {
+	text-align: center;
+	border: none;
+	padding: 10px 15px;
+	font-size: 14px;
+	vertical-align: top;
+}
+.table tbody tr:nth-child(even){
+	background: #f3f3f3;
+}
+.table tbody tr td:first-child {
+	border-radius: 8px 0 0 8px;
+}
+.table tbody tr td:last-child {
+	border-radius: 0 8px 8px 0;
+}
