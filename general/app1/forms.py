@@ -7,7 +7,6 @@ class InputMailForm(forms.Form):
     text_mail = forms.CharField(max_length=100)
     time_create = str(datetime.datetime.now())
 
-    # MailForm - наша маодель из models
     def save(self):
         new_tag = MailForm.objects.create(
             text_mail=self.cleaned_data['text_mail'],

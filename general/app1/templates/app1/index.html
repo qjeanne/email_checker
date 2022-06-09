@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class = "features">
-    <form class="rect_input" method='post' action="{% url 'CreateMail' %}">
+    <form class="rect_input" method='post' action="{% url 'UploadMail' %}">
         <h2 style="font-size: 20pt"><br>Введите email-адрес<br>для проверки<br><br></h2>
         {% csrf_token %}
         {{form.text_mail}}
@@ -60,15 +60,14 @@
 </div>
 {% endif %}
 
-<hr class="border_hr">
 <div class="card text-center">
         <div class="rect_input" style="height: 250px">
             <h2 style="font-size: 20pt"><br>Загрузите список email-адресов<br>файлом формата .csv или .xlsx<br><br></h2>
-            <form method='post' action="" enctype="multipart/form-data"> {% csrf_token %}
+            <form method='post' enctype="multipart/form-data" action="{% url 'DownloadFile' %}">
                 <div class="form-group">
                     {% csrf_token %}
                     {{ file }}
-                    <br><br><button type="submit" class="btn btn-success">Загрузить файл</button>
+                    <br><br><input type="submit" class="btn btn-success" value='Проверить'>
                 </div>
             </form>
         </div>
@@ -77,19 +76,10 @@
     {% endif %}
 </div>
 
-<div class="get_result">
-    <p class="text_download">Чтобы запустить проверку загруженного файла и скачать результаты - нажмите «Проверить файл»</p>
-  <div class="row">
-    <div class="col text-center">
-        <button type='submit' class='btn btn-warning' onclick="window.location.href='/download'">Проверить файл</button>
-    </div>
-  </div>
-</div>
-
 {% if pie_img %}
 <div class="container_img">
   <div class="row">
-      <p class="textgraph text-center">Ниже представлена диаграмма разделённых по группам email-адресов и построенная по данным последнего загруженного файла в БД</p>
+      <p class="textgraph text-center">Ниже представлена диаграмма разделённых по группам email-адресов</p>
     <div class="col text-center">
       <img src="{{ pie_img }}">
     </div>

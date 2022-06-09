@@ -1,16 +1,10 @@
 import base64
-import re
 from io import BytesIO
 
-import requests
-from bs4 import BeautifulSoup
 import pandas as pd
-import json
-from itertools import groupby
 
 from django.core.files.base import ContentFile
 
-from .forms import *
 import os
 import datetime
 from django.core.files import File
@@ -20,9 +14,7 @@ import matplotlib.pyplot as plt
 from email_validator import validate_email, caching_resolver
 import freemail
 import threading
-from email_validate import validate_or_fail, exceptions
-
-import time
+from email_validate import validate_or_fail
 
 dfs = []
 to_recheck = []
@@ -91,23 +83,26 @@ def check(email, recheck):
                 result['Free-email'] = freemail.is_free(email)
                 result['Временный email'] = freemail.is_disposable(email)
                 list_of_mx = []
-                for mx in email_object.mx:
-                    list_of_mx.append(mx[1])
-                result['MX-записи'] = '\n'.join(list_of_mx)
-                result['Ошибка'] = SMTP_errors[e.__class__.__name__]
-                codes = []
-                for x in e.args:
-                    for mes in dict(x).values():
-                        code = mes.code
-                        if code not in codes:
-                            codes.append(code)
-                            if code in more_SMTP_info.keys():
-                                result['Ошибка'] += more_SMTP_info[code]
+                if email_object.mx:
+                    for mx in email_object.mx:
+                        list_of_mx.append(mx[1])
+                    result['MX-записи'] = '\n'.join(list_of_mx)
+                    result['Ошибка'] = SMTP_errors[e.__class__.__name__]
+                    codes = []
+                    for x in e.args:
+                        for mes in dict(x).values():
+                            code = mes.code
+                            if code not in codes:
+                                codes.append(code)
+                                if code in more_SMTP_info.keys():
+                                    result['Ошибка'] += more_SMTP_info[code]
 
     return result
 
 def determine_email_status(result):
-    if result['SMTP-аутентификация']:
+    if result['Временный email']:
+        result['Статус'] = 'Несуществующий или закрытый'
+    elif result['SMTP-аутентификация']:
         result['Статус'] = 'Активный'
     elif result['Ошибка'] == 'Произошла ошибка при проверке всех доступных MX-серверов.':
         result['Статус'] = 'Неактивный'
@@ -127,8 +122,7 @@ def check_and_append_to_list(email, recheck):
 
 
 resolver = caching_resolver(timeout=10)
-# ------------------------------ ФУНКЦИЯ ОБРАБОТКИ ЕДЕНИЧНОГО E-MAIL --------------------------
-def CreateTable(email):
+def check_email(email):
 
     dfs.clear()
     to_recheck.clear()
@@ -143,9 +137,13 @@ def CreateTable(email):
 
     df = pd.DataFrame(dfs)
 
-    # -------------------------------- СОХРАНЕНИЕ ОБРАБОТАННОЙ ПОЧТЫ В БД ----------------------------------------
+    save_one_email(df, email)
 
-    filename = ('mail_{0} {1}.xlsx'.format(email, str(datetime.datetime.now())[:19].replace(':', ' ')))
+    return dfs[0]
+
+def save_one_email(df, email):
+
+    filename = ('mail_{0}_{1}.xlsx'.format(email, str(datetime.datetime.now())[:19].replace(':', ' ')))
     df.to_excel(filename, index=False)
 
     try:
@@ -155,19 +153,16 @@ def CreateTable(email):
     except:
         print("\nНе удалось сохранить ОБРАБОТАННЫЙ ФАЙЛ {0} в БД!\n".format(filename))
 
-    return dfs[0]
-# ------------------------------------ ФУНКЦИЯ ОБРАБОТКИ ЗАГРУЖЕННОГО ФАЙЛА ----------------------------
-def MailProcessing(last_file):
+def check_file(file):
 
     dfs.clear()
     to_recheck.clear()
     threads = []
 
-    # читаем данные из последнего загруженного файла
-    if last_file.endswith('.xlsx') == True:
-        input_df = pd.read_excel(last_file, sep=';', encoding='utf-8')
-    elif last_file.endswith('.csv') == True:
-        input_df = pd.read_csv(last_file, sep=';', encoding='utf-8')
+    if file.endswith('.xlsx') == True:
+        input_df = pd.read_excel(file, sep=';', encoding='utf-8')
+    elif file.endswith('.csv') == True:
+        input_df = pd.read_csv(file, sep=';', encoding='utf-8')
 
     for email in input_df['Email']:
         t = threading.Thread(target=check_and_append_to_list, args=(email, False))
@@ -188,6 +183,13 @@ def MailProcessing(last_file):
         t.join()
 
     df = pd.DataFrame(dfs)
+
+    df_mass, email_groups = create_email_groups(dfs)
+
+    save_emails(email_groups)
+    create_diagram(df_mass)
+
+def create_email_groups(dfs):
 
     list_active = []
     list_unactive = []
@@ -215,47 +217,41 @@ def MailProcessing(last_file):
 
     df_mass = [len(list_active), len(list_unactive), len(list_lock), len(list_unexist), len(list_incorrectly)]
 
-
-    # формируем словарик состоящий из названия будущих Excel-листов и датафреймов
-    ITOG = {'Активные': df_active, 'Неактивные': df_unactive, 'Несуществующие или закрытые': df_lock,
+    email_groups = {'Активные': df_active, 'Неактивные': df_unactive, 'Несуществующие или закрытые': df_lock,
             'Несуществующие': df_unexist, 'Некорректные': df_incorrectly}
 
-    # создаём директорию для хранения построенных диаграмм
+    return df_mass, email_groups
+
+def save_emails(email_groups):
+
     dir = 'app1/static/app1/upload_files/'
 
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    # обзовём наш файл
-    filename_excel = dir + ('Результаты обработки {0}.xlsx'.format(str(datetime.datetime.now())[:19].replace(':', ' ')))
+    filename_excel = dir + ('file_check_{0}.xlsx'.format(str(datetime.datetime.now())[:19].replace(':', ' ')))
 
     writer = pd.ExcelWriter(filename_excel, engine='xlsxwriter', options={'nan_inf_to_errors': True})
 
     workbook = writer.book
 
-    for i in ITOG.keys():
+    for i in email_groups.keys():
 
-        if ITOG[i].empty:
+        if email_groups[i].empty:
             print("\n{0} отсутствуют\n".format(i))
 
         else:
 
-            ITOG[i].to_excel(writer, sheet_name = i, index=False)
+            email_groups[i].to_excel(writer, sheet_name=i, index=False)
 
-            # Настройка ширины столбцов
             my_format = writer.book.add_format({'num_format': '#', 'bold': False, 'font_name': 'Times New Roman',  'font_color': '#000000', 'font_size': 10, 'text_wrap': False, 'align': 'center', 'valign': 'vcenter', 'border': 3, 'border_color': '#cccccc'}) #'fg_color': '#bee3f7',
-            # настройка масштаба excel таблицы
 
             writer.sheets['{0}'.format(i)].set_zoom(95)
-            # настройка ширины столбцов excel таблицы
             writer.sheets['{0}'.format(i)].set_column('A:W', 30, my_format)
 
-            # РАСКРАШИВАЕМ КЛЕТКИ градиентом
             worksheet = writer.sheets['{0}'.format(i)]
 
     writer.save()
-
-# -------------------------------- СОХРАНЕНИЕ ОБРАБОТАННОГО ФАЙЛА В БД ----------------------------------------
 
     name = ('Результаты обработки {0}.xlsx'.format(str(datetime.datetime.now())[:19].replace(':', ' ')))
     try:
@@ -265,8 +261,7 @@ def MailProcessing(last_file):
     except:
         print("\nНе удалось сохранить ОБРАБОТАННЫЙ ФАЙЛ {0} в БД!\n".format(name))
 
-
-# ------------------------------- СТРОИМ ДИАГРАММУ РАЗДЕЛЕНИЯ НА ГРУППЫ И СОХРАНЯЕМ ЕЁ В БД -----------------------
+def create_diagram(df_mass):
 
     x = df_mass
     labels = ['Активные', 'Неактивные', 'Несуществующие или закрытые', 'Несуществующие', 'Некорректные']
@@ -290,11 +285,9 @@ def MailProcessing(last_file):
     for i, patch in enumerate(patches):
         texts[i].set_color(patch.get_facecolor())
     plt.setp(pcts, color='white')
-    plt.legend(loc='upper center', labels=labels, colors=colors, bbox_to_anchor = (0.1, 1.05),)
-    #ax.set_title('Диаграмма разделения email-адресов на группы', fontsize=16)
+    plt.legend(loc='upper center', labels=labels, bbox_to_anchor=(0.1, 1.05))
     plt.tight_layout()
 
-    # сохраняем диаграмму в БД
     imgdata = BytesIO()
     fig.savefig(imgdata, format='png')
     imgdata.seek(0)
@@ -303,7 +296,5 @@ def MailProcessing(last_file):
 
     content_file = ContentFile(pie_results)
     model_object = ImageResult()
-    model_object.img_name.save('Диаграмма результатов анализа email-адресов {0}.png'.format(str(datetime.datetime.now())[:19].replace(':', ' ')), content_file)
+    model_object.img_name.save('diagram_{0}.png'.format(str(datetime.datetime.now())[:19].replace(':', ' ')), content_file)
     model_object.save()
-
-
